@@ -1,0 +1,71 @@
+name: Build linux 'default' wheels
+
+on:
+  push:
+    paths:
+    - ".github/workflows/build_python_default_whl.yml"
+    - "**.cpp"
+    - "**.h"
+    - "**.c"
+    - "**.cu"
+    - "**.cmake"
+    - "**CMakeLists.txt"
+    - "**py"
+  pull_request:
+    paths:
+    - ".github/workflows/build_python_default_whl.yml"
+    - "**.cpp"
+    - "**.h"
+    - "**.c"
+    - "**.cu"
+    - "**.cmake"
+    - "**CMakeLists.txt"
+    - "**py"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+
+  Ubuntu:
+    runs-on: 'ubuntu-latest'
+    strategy:
+      fail-fast: false
+      matrix:
+        architecture:
+          - "arm/v7"
+          - "arm64/v8"
+          - "amd64"
+        python_version:
+          - "3.9"
+          - "3.10"
+          - "3.11"
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install python dependencies
+      run: pip3 install build
+
+    - name: Build wheel
+      run: |
+        docker run --rm --privileged tonistiigi/binfmt --install all
+
+        docker run -i \
+          --volume ${{ github.workspace }}:${{ github.workspace }} \
+          --workdir=${{ github.workspace }} \
+          --platform=linux/${{ matrix.architecture }} \
+          python:${{ matrix.python_version }}-slim-bookworm \
+          bash -c "apt update && \
+          DEBIAN_FRONTEND=noninteractive apt install -y python3 python3-pip && \
+          pip3 install build && \
+          python3 -m venv venv && \
+          python3 -m build --wheel"
+
+    - name: Upload wheel
+      uses: actions/upload-artifact@v3
+      with:
+        name: wheels-${{ matrix.architecture}}-${{ matrix.python_version }}
+        path: ./dist/*.whl
+        if-no-files-found: error
+
