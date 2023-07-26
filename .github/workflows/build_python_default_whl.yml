@@ -2,6 +2,8 @@ name: Build linux 'default' wheels
 
 on:
   push:
+    branches:
+      - master
     paths:
     - ".github/workflows/build_python_default_whl.yml"
     - "**.cpp"
