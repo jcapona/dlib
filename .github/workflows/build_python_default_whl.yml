@@ -63,10 +63,15 @@ jobs:
           pip3 install build && \
           python3 -m build --wheel"
 
+    - name: Create artifact name
+      run: |
+        sanitized_architecture=$(echo -n "${{ matrix.architecture }}" | sed -e 's/[ \t:\/\\"<>|*?]/-/g' -e 's/--*/-/g')
+        echo "ARTIFACT_NAME=wheel-$sanitized_architecture-${{ matrix.python_version }}" >> $GITHUB_ENV
+
     - name: Upload wheel
       uses: actions/upload-artifact@v3
       with:
-        name: wheels-${{ matrix.architecture}}-${{ matrix.python_version }}
+        name: ${{ env.ARTIFACT_NAME }}
         path: ./dist/*.whl
         if-no-files-found: error
 
